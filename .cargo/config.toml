@@ -1,0 +1,19 @@
+# Configuração de linker para testes com PyO3.
+#
+# No macOS, extensões Python (.so/.dylib) têm símbolos Python resolvidos
+# em runtime pelo interpretador que as carrega. Por isso usamos
+# `dynamic_lookup`: o linker aceita símbolos Python não resolvidos durante
+# `cargo test` e os resolve quando o Python importa a biblioteca.
+#
+# Sem isso, `cargo test` falha porque tenta linkar os símbolos _PyDict_New,
+# _PyErr_SetString etc. estaticamente — o que nunca vai funcionar em projetos
+# com crate-type = ["cdylib"].
+#
+# Linux não precisa disso porque a feature `extension-module` do PyO3 já
+# configura corretamente via rpaths.
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]

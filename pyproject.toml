@@ -1,0 +1,50 @@
+[build-system]
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "rust-py-monitor"
+version = "0.1.0"
+description = "High-performance Python monitoring library with Rust core"
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Roberto Lima", email = "robertolima.izphera@gmail.com" }
+]
+keywords = ["monitoring", "metrics", "django", "fastapi", "prometheus", "rust"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Monitoring",
+    "Topic :: Internet :: WWW/HTTP",
+]
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+fastapi = ["fastapi>=0.100.0", "starlette>=0.27.0"]
+django = ["django>=4.0"]
+prometheus = ["prometheus-client>=0.17.0"]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "httpx>=0.24",
+    "fastapi>=0.100.0",
+    "django>=4.0",
+    "maturin>=1.4",
+]
+
+[tool.maturin]
+python-source = "python"
+module-name = "rust_py_monitor._core"
+features = ["pyo3/extension-module"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

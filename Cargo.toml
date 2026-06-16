@@ -1,0 +1,28 @@
+[package]
+name = "rust_py_monitor"
+version = "0.1.0"
+edition = "2021"
+description = "High-performance Python monitoring library with Rust core"
+authors = ["Roberto Lima <robertolima.izphera@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/robertolima-dev/rust-py-monitor"
+keywords = ["monitoring", "metrics", "django", "fastapi", "prometheus"]
+categories = ["development-tools", "web-programming"]
+
+# 'cdylib' gera o .so/.pyd importável pelo Python
+# 'rlib' é necessário para testes unitários em Rust
+[lib]
+name = "rust_py_monitor"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { version = "0.25", features = ["extension-module"] }
+sysinfo = "0.35"
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+pretty_assertions = "1"
+# serial_test: garante que testes que compartilham estado global
+# (como o static STORE) não rodem em paralelo, evitando race conditions.
+serial_test = "3"

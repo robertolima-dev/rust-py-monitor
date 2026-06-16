@@ -1,0 +1,4 @@
+rust-py-monitor
+fastapi
+uvicorn[standard]
+httpx

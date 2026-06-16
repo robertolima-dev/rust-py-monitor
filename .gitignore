@@ -1,0 +1,36 @@
+# Rust
+/target
+Cargo.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.dll
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.env
+.venv
+venv/
+env/
+
+# Maturin / wheels
+wheels/
+
+# Pytest
+.pytest_cache/
+.coverage
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+
+# macOS
+.DS_Store

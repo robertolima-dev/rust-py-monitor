@@ -1,0 +1,2 @@
+rust-py-monitor
+django>=4.0
