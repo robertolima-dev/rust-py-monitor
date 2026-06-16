@@ -1,5 +1,12 @@
 # rust-py-monitor
 
+[![PyPI](https://img.shields.io/pypi/v/rust-py-monitor?color=e8673a&label=PyPI)](https://pypi.org/project/rust-py-monitor/)
+[![Python](https://img.shields.io/pypi/pyversions/rust-py-monitor?color=4b8bbe)](https://pypi.org/project/rust-py-monitor/)
+[![License](https://img.shields.io/pypi/l/rust-py-monitor?color=3fb950)](https://github.com/robertolima-dev/rust-py-monitor/blob/main/LICENSE)
+[![GitHub](https://img.shields.io/github/stars/robertolima-dev/rust-py-monitor?style=flat&color=e8673a)](https://github.com/robertolima-dev/rust-py-monitor)
+
+🌐 **[rust-py-monitor.vercel.app](https://rust-py-monitor.vercel.app/)**
+
 High-performance Python monitoring library with a Rust core.
 
 Collects CPU, memory, threads, and HTTP request metrics from Django and FastAPI applications with minimal overhead. Exports metrics to logs, JSON, and Prometheus.
