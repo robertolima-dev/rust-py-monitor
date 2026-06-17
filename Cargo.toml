@@ -1,6 +1,6 @@
 [package]
 name = "rust_py_monitor"
-version = "0.1.1"
+version = "0.1.4"
 edition = "2021"
 description = "High-performance Python monitoring library with Rust core"
 authors = ["Roberto Lima <robertolima.izphera@gmail.com>"]
