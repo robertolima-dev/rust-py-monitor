@@ -37,16 +37,21 @@ class MonitorMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:  # type: ignore[override]
         start = time.perf_counter()
 
-        response = await call_next(request)
-
-        # perf_counter returns seconds with high resolution; convert to ms.
-        duration_ms = (time.perf_counter() - start) * 1000.0
-
-        record_request(
-            method=request.method,
-            path=request.url.path,
-            status_code=response.status_code,
-            duration_ms=duration_ms,
-        )
-
-        return response
+        # Default to 500: if the handler raises before producing a response,
+        # the request is still recorded as a server error. Without this, the
+        # unhandled-exception 500s — the ones that matter most — would never
+        # appear in the metrics, since the recording code below would be skipped.
+        status_code = 500
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+            return response
+        finally:
+            # perf_counter returns seconds with high resolution; convert to ms.
+            duration_ms = (time.perf_counter() - start) * 1000.0
+            record_request(
+                method=request.method,
+                path=request.url.path,
+                status_code=status_code,
+                duration_ms=duration_ms,
+            )

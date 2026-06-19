@@ -150,6 +150,27 @@ async def test_request_metric_to_dict(app: FastAPI):
 
 
 @pytest.mark.asyncio
+async def test_middleware_records_unhandled_exception_as_500(app: FastAPI):
+    """A route that raises must still be recorded — as a 500 server error."""
+
+    @app.get("/boom")
+    async def boom():
+        raise RuntimeError("kaboom")
+
+    # raise_app_exceptions=False lets ServerErrorMiddleware turn the exception
+    # into a 500 response instead of propagating it to the test client.
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get("/boom")
+
+    assert resp.status_code == 500
+    metrics = get_requests()
+    assert len(metrics) == 1
+    assert metrics[0].path == "/boom"
+    assert metrics[0].status_code == 500
+
+
+@pytest.mark.asyncio
 async def test_snapshot_works_inside_request(app: FastAPI):
     """The Rust snapshot must work normally inside a request context."""
 

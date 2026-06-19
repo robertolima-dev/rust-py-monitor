@@ -16,9 +16,11 @@ Collects CPU, memory, threads, and HTTP request metrics from Django and FastAPI 
 ## Features
 
 - **Process snapshot** — CPU %, RSS memory, virtual memory, thread count, PID
-- **FastAPI middleware** — per-request latency, method, path, status code
+- **FastAPI middleware** — per-request latency, method, path, status code (errors recorded even when a handler raises)
 - **Django middleware** — same, for WSGI and ASGI Django apps
 - **Aggregator** — total requests, error count, error rate, avg/min/max/p50/p95/p99 latency
+- **Bounded store** — request history is a capped ring buffer (default 10k) — constant memory under any traffic
+- **Multi-worker aggregation** — opt-in shared store merges metrics across gunicorn/uvicorn workers (`RPY_MULTIPROC_DIR`)
 - **Prometheus exporter** — `/metrics` endpoint compatible with Prometheus scraper
 - **Rust core** — collection and aggregation happen in Rust via PyO3; Python API stays simple
 
@@ -247,6 +249,49 @@ Clears the request store. Useful for testing and periodic resets.
 
 ---
 
+### `rust_py_monitor.set_max_requests(n)` / `get_max_requests() → int`
+
+The request store is a bounded ring buffer (default capacity **10 000**). Once
+full, the oldest entries are evicted first, so memory never grows without bound.
+Use these to tune the retention window.
+
+---
+
+## Multi-worker deployments (gunicorn / uvicorn)
+
+By default each worker process keeps its own in-memory store. A Prometheus
+scrape of `/metrics` reaches only one worker, so the numbers would reflect just
+that worker's traffic.
+
+Set the **`RPY_MULTIPROC_DIR`** environment variable to a writable directory to
+enable shared aggregation. Each worker writes a small fixed-size shard file
+(`rpy-<pid>.shard`); `aggregate()` and `metrics_text()` then merge **all** live
+workers' shards at read time. Shards of dead workers are pruned automatically.
+
+```bash
+export RPY_MULTIPROC_DIR=/tmp/rpy-metrics
+gunicorn -w 4 myapp:app
+```
+
+You can also configure it at runtime:
+
+```python
+import rust_py_monitor
+rust_py_monitor.set_multiproc_dir("/tmp/rpy-metrics")
+rust_py_monitor.multiproc_enabled()   # True
+rust_py_monitor.get_multiproc_dir()   # "/tmp/rpy-metrics"
+```
+
+**Notes:**
+- Counters (`total_requests`, `total_errors`) and latency **histogram buckets**
+  are summed across workers. Latency percentiles (p50/p95/p99) are therefore
+  **approximated from the merged histogram** rather than computed exactly.
+- `get_requests()` always returns the **local** process's recent requests only.
+- Process metrics (CPU/memory/threads) reflect the worker that served the
+  scrape.
+
+---
+
 ## Building from Source
 
 Requires Rust and [maturin](https://github.com/PyO3/maturin).
@@ -282,8 +327,9 @@ pytest tests/
 Python API (rust_py_monitor)
     ├── snapshot()          ──► src/snapshot.rs   (sysinfo crate)
     ├── aggregate()         ──► src/aggregator.rs (pure Rust math)
-    ├── get_requests()      ──► src/request_metrics.rs (static Mutex<Vec>)
+    ├── get_requests()      ──► src/request_metrics.rs (static Mutex<VecDeque>, bounded)
     ├── metrics_text()      ──► src/prometheus.rs (text formatter)
+    ├── set_multiproc_dir() ──► src/multiproc.rs  (mmap shard per worker)
     │
     ├── fastapi.MonitorMiddleware  ──► record_request() ──► Rust store
     ├── django.MonitorMiddleware   ──► record_request() ──► Rust store

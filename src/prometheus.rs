@@ -141,8 +141,23 @@ pub fn render() -> String {
 fn push_metric(out: &mut String, name: &str, kind: &str, help: &str, value: f64) {
     let _ = writeln!(out, "# HELP {} {}", name, help);
     let _ = writeln!(out, "# TYPE {} {}", name, kind);
-    let _ = writeln!(out, "{} {}", name, value);
+    let _ = writeln!(out, "{} {}", name, fmt_value(value));
     out.push('\n');
+}
+
+/// Formats a float for the Prometheus exposition format.
+///
+/// Rust's default `Display` prints `inf` / `-inf` / `NaN`, but Prometheus
+/// requires the exact tokens `+Inf`, `-Inf`, `NaN`. Finite values fall through
+/// to the normal formatter (e.g. counters render `6` rather than `6.0`).
+fn fmt_value(value: f64) -> String {
+    if value.is_nan() {
+        "NaN".to_string()
+    } else if value.is_infinite() {
+        if value > 0.0 { "+Inf".to_string() } else { "-Inf".to_string() }
+    } else {
+        value.to_string()
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -205,6 +220,14 @@ mod tests {
             text
         );
         cleanup();
+    }
+
+    #[test]
+    fn fmt_value_uses_prometheus_tokens() {
+        assert_eq!(fmt_value(6.0), "6");
+        assert_eq!(fmt_value(f64::NAN), "NaN");
+        assert_eq!(fmt_value(f64::INFINITY), "+Inf");
+        assert_eq!(fmt_value(f64::NEG_INFINITY), "-Inf");
     }
 
     #[test]

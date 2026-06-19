@@ -1,6 +1,6 @@
 [package]
 name = "rust_py_monitor"
-version = "0.1.4"
+version = "0.2.0"
 edition = "2021"
 description = "High-performance Python monitoring library with Rust core"
 authors = ["Roberto Lima <robertolima.izphera@gmail.com>"]
@@ -20,6 +20,12 @@ crate-type = ["cdylib", "rlib"]
 pyo3 = { version = "0.25", features = ["extension-module"] }
 sysinfo = "0.35"
 chrono = { version = "0.4", features = ["serde"] }
+# memmap2: per-process shard files for multi-worker metric aggregation.
+memmap2 = "0.9"
+
+[target.'cfg(unix)'.dependencies]
+# libc: liveness check (kill(pid, 0)) to prune shards of dead workers.
+libc = "0.2"
 
 [dev-dependencies]
 pretty_assertions = "1"

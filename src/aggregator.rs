@@ -3,6 +3,7 @@
 // This module is plain Rust — no PyO3. The conversion to Python objects
 // happens in lib.rs via `From<AggregatedMetrics> for PyAggregatedMetrics`.
 
+use crate::multiproc;
 use crate::request_metrics;
 
 /// Aggregated statistics over all requests recorded so far.
@@ -61,7 +62,16 @@ fn percentile(sorted: &[f64], p: f64) -> f64 {
 }
 
 /// Reads the global store and computes all statistics in a single pass.
+///
+/// In multi-worker mode (`RPY_MULTIPROC_DIR` set) the statistics are merged
+/// across all live worker shards; latency percentiles are then approximated
+/// from the merged histogram. Otherwise we use the in-process store, which
+/// yields exact percentiles.
 pub fn compute() -> AggregatedMetrics {
+    if let Some(m) = multiproc::merged() {
+        return aggregate_from_merged(m);
+    }
+
     let metrics = request_metrics::get_all();
 
     if metrics.is_empty() {
@@ -108,6 +118,39 @@ pub fn compute() -> AggregatedMetrics {
         p50_latency_ms,
         p95_latency_ms,
         p99_latency_ms,
+    }
+}
+
+/// Builds `AggregatedMetrics` from a merged multi-worker histogram.
+/// Percentiles are approximated via `histogram_quantile` over the merged
+/// buckets — exact percentiles are not recoverable across processes.
+fn aggregate_from_merged(m: multiproc::Merged) -> AggregatedMetrics {
+    if m.total == 0 {
+        return AggregatedMetrics::default();
+    }
+
+    let total_requests = m.total;
+    let total_errors = m.errors;
+    let error_rate = (total_errors as f64 / total_requests as f64) * 100.0;
+
+    let avg_latency_ms = (m.sum_us as f64 / total_requests as f64) / 1000.0;
+    let min_latency_ms = if m.min_us == u64::MAX {
+        0.0
+    } else {
+        m.min_us as f64 / 1000.0
+    };
+    let max_latency_ms = m.max_us as f64 / 1000.0;
+
+    AggregatedMetrics {
+        total_requests,
+        total_errors,
+        error_rate,
+        avg_latency_ms,
+        min_latency_ms,
+        max_latency_ms,
+        p50_latency_ms: multiproc::histogram_quantile(0.50, &m.buckets, max_latency_ms),
+        p95_latency_ms: multiproc::histogram_quantile(0.95, &m.buckets, max_latency_ms),
+        p99_latency_ms: multiproc::histogram_quantile(0.99, &m.buckets, max_latency_ms),
     }
 }
 

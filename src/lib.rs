@@ -4,6 +4,7 @@ use pyo3::types::PyDict;
 
 mod aggregator;
 mod metrics;
+mod multiproc;
 mod prometheus;
 mod request_metrics;
 mod snapshot;
@@ -23,7 +24,14 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(record_request, m)?)?;
     m.add_function(wrap_pyfunction!(get_requests, m)?)?;
     m.add_function(wrap_pyfunction!(clear_requests, m)?)?;
+    m.add_function(wrap_pyfunction!(set_max_requests, m)?)?;
+    m.add_function(wrap_pyfunction!(get_max_requests, m)?)?;
     m.add_class::<PyRequestMetric>()?;
+
+    // Multi-worker aggregation (Step 7)
+    m.add_function(wrap_pyfunction!(set_multiproc_dir, m)?)?;
+    m.add_function(wrap_pyfunction!(get_multiproc_dir, m)?)?;
+    m.add_function(wrap_pyfunction!(multiproc_enabled, m)?)?;
 
     // Step 8: aggregator
     m.add_function(wrap_pyfunction!(py_aggregate, m)?)?;
@@ -112,7 +120,12 @@ impl Snapshot {
 
 #[pyfunction]
 fn hello() -> PyResult<String> {
-    Ok(String::from("rust_py_monitor v0.1.0 — Rust core running!"))
+    // `env!("CARGO_PKG_VERSION")` is resolved at compile time from Cargo.toml,
+    // so this string can never drift out of sync with the crate version.
+    Ok(format!(
+        "rust_py_monitor v{} — Rust core running!",
+        env!("CARGO_PKG_VERSION")
+    ))
 }
 
 #[pyfunction]
@@ -206,6 +219,44 @@ fn get_requests() -> Vec<PyRequestMetric> {
 #[pyfunction]
 fn clear_requests() {
     request_metrics::clear();
+}
+
+/// Sets the maximum number of requests retained in the ring buffer.
+/// Once exceeded, the oldest entries are evicted first. Values < 1 clamp to 1.
+#[pyfunction]
+fn set_max_requests(max: usize) {
+    request_metrics::set_max_requests(max);
+}
+
+/// Returns the current retention capacity of the request store.
+#[pyfunction]
+fn get_max_requests() -> usize {
+    request_metrics::max_requests()
+}
+
+// ---------------------------------------------------------------------------
+// Multi-worker aggregation (Step 7)
+// ---------------------------------------------------------------------------
+
+/// Enables shared multi-worker aggregation, writing this process's shard into
+/// `dir`. Pass `None` to disable. Usually configured via the
+/// `RPY_MULTIPROC_DIR` environment variable instead.
+#[pyfunction]
+#[pyo3(signature = (dir=None))]
+fn set_multiproc_dir(dir: Option<&str>) {
+    multiproc::set_dir(dir);
+}
+
+/// Returns the active multiproc directory, or `None` when disabled.
+#[pyfunction]
+fn get_multiproc_dir() -> Option<String> {
+    multiproc::dir()
+}
+
+/// True when multi-worker aggregation is active.
+#[pyfunction]
+fn multiproc_enabled() -> bool {
+    multiproc::enabled()
 }
 
 // ---------------------------------------------------------------------------

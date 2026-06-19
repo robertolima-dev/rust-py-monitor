@@ -158,6 +158,21 @@ def test_middleware_request_metric_to_dict():
     assert "timestamp" in d
 
 
+def test_middleware_records_unhandled_exception_as_500():
+    """A view that raises must still be recorded — as a 500 server error."""
+    def view_boom(request):
+        raise RuntimeError("kaboom")
+
+    middleware = MonitorMiddleware(view_boom)
+    with pytest.raises(RuntimeError):
+        middleware(factory.get("/boom"))
+
+    metrics = get_requests()
+    assert len(metrics) == 1
+    assert metrics[0].path == "/boom"
+    assert metrics[0].status_code == 500
+
+
 def test_middleware_chain_simulates_django_stack():
     """
     Simulates multiple stacked middlewares (as Django does in practice):

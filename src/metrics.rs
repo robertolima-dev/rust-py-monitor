@@ -7,9 +7,9 @@
 pub struct SnapshotData {
     pub pid: u32,
     /// CPU usage of this process (0.0 – 100.0 * number of cores).
-    /// Note: the first reading may be 0.0 because sysinfo needs two samples
-    /// to compute the delta. Call snapshot() twice with a short interval for
-    /// stable readings in production.
+    /// Measured as the delta since the previous `snapshot()` call (the
+    /// underlying `System` is kept alive between calls). The very first call
+    /// after process start returns ~0.0 since there is no prior sample.
     pub cpu_percent: f64,
     /// RSS (Resident Set Size) in bytes — memory actually in RAM.
     pub memory_rss: u64,
