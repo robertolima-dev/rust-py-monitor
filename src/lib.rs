@@ -3,6 +3,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 
 mod aggregator;
+mod alerts;
 mod metrics;
 mod multiproc;
 mod prometheus;
@@ -40,6 +41,9 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Step 9: Prometheus exporter
     m.add_function(wrap_pyfunction!(py_metrics_text, m)?)?;
     m.add("PROMETHEUS_CONTENT_TYPE", prometheus::CONTENT_TYPE)?;
+
+    // Simple threshold alerts
+    m.add_function(wrap_pyfunction!(alerts::check_alerts, m)?)?;
 
     Ok(())
 }

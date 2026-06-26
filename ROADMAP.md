@@ -27,13 +27,15 @@ tracks what is done and the **directional** ideas under consideration.
   (`RPY_MULTIPROC_DIR`) merged at read time for gunicorn/uvicorn.
 - ✅ Prometheus exporter (`/metrics`, text exposition v0.0.4) with
   `make_fastapi_router()` and `django_metrics_view`.
+- ✅ **Simple threshold alerts** (v0.3.0) — `check_alerts(cpu_percent=...,
+  memory_rss_mb=..., memory_virtual_mb=...)` returns the fired alerts
+  (`{metric, value, threshold, severity}`). Stateless, evaluated against a live
+  snapshot; the comparison logic is pure Rust (unit-tested).
 
 ---
 
 ## Directional ideas (no version assigned — confirm before planning)
 
-- 💡 **Simple alerts** — thresholds for high CPU / high memory, mirroring the
-  `rust-node-monitor` roadmap (shared concept across the two monitors).
 - 💡 **GC metrics** — Python GC collections/pauses alongside CPU/memory.
 - 💡 **Per-route / labeled metrics** — break latency and error counts down by
   route (with cardinality controls), exported as Prometheus labels.

@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "rust-py-monitor"
-version = "0.2.1"
+version = "0.3.0"
 description = "High-performance Python monitoring library with Rust core"
 readme = "README.md"
 license = "MIT"

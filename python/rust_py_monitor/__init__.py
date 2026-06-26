@@ -6,6 +6,7 @@ from rust_py_monitor._core import (  # noqa: F401
     RequestMetric,
     Snapshot,
     aggregate,
+    check_alerts,
     clear_requests,
     get_max_requests,
     get_multiproc_dir,
@@ -40,6 +41,7 @@ __all__ = [
     "get_multiproc_dir",
     "multiproc_enabled",
     "aggregate",
+    "check_alerts",
     "metrics_text",
     "PROMETHEUS_CONTENT_TYPE",
 ]

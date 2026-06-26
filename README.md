@@ -22,6 +22,7 @@ Collects CPU, memory, threads, and HTTP request metrics from Django and FastAPI 
 - **Bounded store** — request history is a capped ring buffer (default 10k) — constant memory under any traffic
 - **Multi-worker aggregation** — opt-in shared store merges metrics across gunicorn/uvicorn workers (`RPY_MULTIPROC_DIR`)
 - **Prometheus exporter** — `/metrics` endpoint compatible with Prometheus scraper
+- **Threshold alerts** — `check_alerts(...)` flags high CPU / memory against your limits
 - **Rust core** — collection and aggregation happen in Rust via PyO3; Python API stays simple
 
 ---
@@ -240,6 +241,30 @@ Returns all recorded requests. Each `RequestMetric` has:
 ### `rust_py_monitor.metrics_text() → str`
 
 Returns all metrics in Prometheus text exposition format (v0.0.4).
+
+---
+
+### `rust_py_monitor.check_alerts(cpu_percent=None, memory_rss_mb=None, memory_virtual_mb=None) → list[dict]`
+
+Simple, stateless threshold alerts over the current process snapshot. Pass the
+thresholds you want to watch; it returns the alerts that fired (a metric
+**exceeds** its threshold). Memory thresholds are in **megabytes**. Only the
+thresholds you provide are evaluated.
+
+```python
+import rust_py_monitor
+
+fired = rust_py_monitor.check_alerts(cpu_percent=80, memory_rss_mb=500)
+# [{"metric": "memory_rss_mb", "value": 612.4, "threshold": 500, "severity": "warning"}]
+
+for alert in fired:
+    print(f"[alert] {alert['metric']}={alert['value']} > {alert['threshold']}")
+```
+
+Each alert is a dict `{"metric", "value", "threshold", "severity"}`, where
+`metric` is one of `"cpu_percent"`, `"memory_rss_mb"`, `"memory_virtual_mb"`.
+Being stateless, you decide when to call it (in a `/health` handler, a periodic
+task, etc.) and what to do with the result.
 
 ---
 
