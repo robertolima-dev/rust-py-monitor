@@ -292,6 +292,17 @@ rust_py_monitor.get_multiproc_dir()   # "/tmp/rpy-metrics"
 
 ---
 
+## Roadmap
+
+`rust-py-monitor` is mature (v0.2.0): process snapshots, FastAPI/Django
+middlewares, the latency aggregator, the bounded ring-buffer store, multi-worker
+aggregation, and the Prometheus exporter are shipped. Directional ideas under
+consideration (simple CPU/memory alerts, GC metrics, per-route labeled metrics,
+more exporters/sinks, a Flask middleware) are tracked in
+[ROADMAP.md](./ROADMAP.md).
+
+---
+
 ## Building from Source
 
 Requires Rust and [maturin](https://github.com/PyO3/maturin).
